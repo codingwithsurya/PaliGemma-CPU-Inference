@@ -1,6 +1,6 @@
-# PaLiGemma Inference on CPU
+# PaliGemma Inference on CPU
 
-Replication and efficient CPU-based inference for the PaLiGemma model, a state-of-the-art vision-language model combining a SigLIP vision encoder with a Gemma language decoder.
+Replication and efficient CPU-based inference for the PaliGemma model, a state-of-the-art vision-language model combining a SigLIP vision encoder with a Gemma language decoder.
 
 ## Features
 
@@ -13,7 +13,7 @@ Replication and efficient CPU-based inference for the PaLiGemma model, a state-o
 
 1. Clone the repository:
    ```
-   git clone https://github.com/codingwithsurya/PaLiGemma-CPU-Inference.git
+   git clone https://github.com/codingwithsurya/PaliGemma-CPU-Inference.git
    cd paligemma-inference
    ```
 
