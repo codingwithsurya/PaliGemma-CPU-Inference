@@ -13,8 +13,8 @@ Replication and efficient CPU-based inference for the PaLiGemma model, a state-o
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/pytorch-paligemma.git
-   cd pytorch-paligemma
+   git clone https://github.com/codingwithsurya/PaLiGemma-CPU-Inference.git
+   cd paligemma-inference
    ```
 
 2. Install the required packages:
