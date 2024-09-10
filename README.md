@@ -1,6 +1,6 @@
-# PaliGemma Inference on CPU
+# PaliGemma Inference Pipeline
 
-Replication and efficient CPU-based inference for the PaliGemma model, a state-of-the-art vision-language model combining a SigLIP vision encoder with a Gemma language decoder.
+Replication and efficient CPU-compatible inference for the PaliGemma model, a state-of-the-art vision-language model combining a SigLIP vision encoder with a Gemma language decoder.
 
 ## Features
 
