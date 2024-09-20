@@ -6,11 +6,9 @@ from paligemma_processor import PaliGemmaProcessor
 from gemma_model import KVCache, PaliGemmaForConditionalGeneration
 from transformers import AutoProcessor, AutoModelForPreTraining
 
-
 def move_inputs_to_device(model_inputs: dict, device: str):
     model_inputs = {k: v.to(device) for k, v in model_inputs.items()}
     return model_inputs
-
 
 def get_model_inputs(
     processor: PaliGemmaProcessor, prompt: str, image_file_path: str, device: str
@@ -21,7 +19,6 @@ def get_model_inputs(
     model_inputs = processor(text=prompts, images=images)
     model_inputs = move_inputs_to_device(model_inputs, device)
     return model_inputs
-
 
 def test_inference(
     model: PaliGemmaForConditionalGeneration,
@@ -78,14 +75,13 @@ def test_inference(
 
     print(prompt + ":", decoded)
 
-
 def _sample_top_p(probs: torch.Tensor, p: float):
     # (B, vocab_size)
     probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
     # (B, vocab_size)
     probs_sum = torch.cumsum(probs_sort, dim=-1)
     # (B, vocab_size)
-    # (Substracting "probs_sort" shifts the cumulative sum by 1 position to the right before masking)
+    # (Subtracting "probs_sort" shifts the cumulative sum by 1 position to the right before masking)
     mask = probs_sum - probs_sort > p
     # Zero out all the probabilities of tokens that are not selected by the Top P
     probs_sort[mask] = 0.0
@@ -96,7 +92,6 @@ def _sample_top_p(probs: torch.Tensor, p: float):
     # Get the token position in the vocabulary corresponding to the sampled index
     next_token = torch.gather(probs_idx, -1, next_token)
     return next_token
-
 
 def main(
     model_path: str = None,
@@ -121,7 +116,14 @@ def main(
     print(f"Loading model")
     processor = AutoProcessor.from_pretrained("google/paligemma-3b-pt-224")
     model = AutoModelForPreTraining.from_pretrained("google/paligemma-3b-pt-224", torch_dtype="auto")
-    model = model.to(device).eval()
+    
+    # Apply dynamic quantization
+    quantized_model = torch.quantization.quantize_dynamic(
+        model,  # the original model
+        {torch.nn.Linear},  # layers to quantize
+        dtype=torch.qint8  # dtype of quantized weights
+    )
+    model = quantized_model.to(device).eval()
 
     num_image_tokens = model.config.vision_config.num_image_tokens
     image_size = model.config.vision_config.image_size
@@ -140,7 +142,6 @@ def main(
             top_p,
             do_sample,
         )
-
 
 if __name__ == "__main__":
     fire.Fire(main)
