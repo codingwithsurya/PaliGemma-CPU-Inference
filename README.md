@@ -26,7 +26,7 @@ Replication and efficient inference for the PaliGemma model, a state-of-the-art 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/codingwithsurya/PaliGemma-CPU-Inference.git
+   git clone https://github.com/codingwithsurya/PaliGemma-Inference-Pipeline.git
    cd paligemma-inference
    ```
 
