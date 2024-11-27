@@ -1,10 +1,12 @@
 from PIL import Image
 import torch
 import fire
-
+from optimized_inference import OptimizedInference
 from paligemma_processor import PaliGemmaProcessor
 from gemma_model import KVCache, PaliGemmaForConditionalGeneration
 from transformers import AutoProcessor, AutoModelForPreTraining
+import os
+from dotenv import load_dotenv
 
 def move_inputs_to_device(model_inputs: dict, device: str):
     model_inputs = {k: v.to(device) for k, v in model_inputs.items()}
@@ -94,54 +96,54 @@ def _sample_top_p(probs: torch.Tensor, p: float):
     return next_token
 
 def main(
-    model_path: str = None,
     prompt: str = None,
     image_file_path: str = None,
-    max_tokens_to_generate: int = 100,
+    max_tokens_to_generate: int = 300,
     temperature: float = 0.8,
     top_p: float = 0.9,
-    do_sample: bool = False,
+    do_sample: bool = True,
     only_cpu: bool = False,
 ):
-    device = "cpu"
-
-    if not only_cpu:
-        if torch.cuda.is_available():
-            device = "cuda"
-        elif torch.backends.mps.is_available():
-            device = "mps"
-
-    print("Device in use: ", device)
-
-    print(f"Loading model")
-    processor = AutoProcessor.from_pretrained("google/paligemma-3b-pt-224")
-    model = AutoModelForPreTraining.from_pretrained("google/paligemma-3b-pt-224", torch_dtype="auto")
+    """Main inference function"""
     
-    # Apply dynamic quantization
-    quantized_model = torch.quantization.quantize_dynamic(
-        model,  # the original model
-        {torch.nn.Linear},  # layers to quantize
-        dtype=torch.qint8  # dtype of quantized weights
-    )
-    model = quantized_model.to(device).eval()
-
-    num_image_tokens = model.config.vision_config.num_image_tokens
-    image_size = model.config.vision_config.image_size
-    processor = PaliGemmaProcessor(tokenizer=processor.tokenizer, num_image_tokens=num_image_tokens, image_size=image_size)
-
-    print("Running inference")
-    with torch.no_grad():
-        test_inference(
-            model,
-            processor,
-            device,
-            prompt,
-            image_file_path,
-            max_tokens_to_generate,
-            temperature,
-            top_p,
-            do_sample,
+    # Load environment variables
+    load_dotenv()
+    
+    # Get token from environment variable
+    hf_token = os.getenv("HUGGING_FACE_TOKEN")
+    if not hf_token:
+        raise ValueError(
+            "Please set your Hugging Face token in the .env file or environment variables.\n"
+            "You can get your token from https://huggingface.co/settings/tokens"
         )
+        
+    # Set Hugging Face token
+    os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
+    
+    # Determine device
+    device = "cpu" if only_cpu else ("mps" if torch.backends.mps.is_available() else "cpu")
+    print(f"Using device: {device}")
+
+    # Load model and processor
+    processor = AutoProcessor.from_pretrained("google/paligemma-3b-pt-224")
+    model = AutoModelForPreTraining.from_pretrained(
+        "google/paligemma-3b-pt-224",
+        torch_dtype=torch.float16 if device == "mps" else "auto"
+    )
+    
+    # Initialize optimized inference
+    inference_wrapper = OptimizedInference(model, processor, device)
+    
+    # Generate text
+    generated_text = inference_wrapper.generate(
+        image_file_path,
+        prompt,
+        max_length=max_tokens_to_generate,
+        temperature=temperature,
+        top_p=top_p
+    )
+    
+    print(f"Generated text: {generated_text}")
 
 if __name__ == "__main__":
     fire.Fire(main)
